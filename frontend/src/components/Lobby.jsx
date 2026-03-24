@@ -1,25 +1,38 @@
 import React, { useState } from 'react';
 
-const Lobby = ({ onCreateRoom, onJoinRoom }) => {
-  const [playerName, setPlayerName] = useState('');
+const Lobby = ({ onCreateRoom, onJoinRoom, telegramUser }) => {
+  const [playerName, setPlayerName] = useState(telegramUser?.username || '');
   const [gameMode, setGameMode] = useState('1v1');
   const [joinRoomId, setJoinRoomId] = useState('');
 
+  const gameModes = [
+    { id: '1v1', name: '⚔️ 1v1 Duel', maxPlayers: 2, icon: '⚔️' },
+    { id: '2v2', name: '👥 2v2 Team Battle', maxPlayers: 4, icon: '👥' },
+    { id: 'squad', name: '🔫 Squad (4 Players)', maxPlayers: 4, icon: '🔫' },
+    { id: '4v4', name: '🚀 4v4 Epic Battle', maxPlayers: 8, icon: '🚀' }
+  ];
+
   const handleCreate = () => {
-    if (playerName.trim()) {
-      onCreateRoom(playerName, gameMode);
+    if (playerName.trim() || telegramUser) {
+      onCreateRoom(playerName || telegramUser?.first_name || 'Player', gameMode);
     }
   };
 
   const handleJoin = () => {
-    if (playerName.trim() && joinRoomId.trim()) {
-      onJoinRoom(joinRoomId, playerName);
+    if ((playerName.trim() || telegramUser) && joinRoomId.trim()) {
+      onJoinRoom(joinRoomId, playerName || telegramUser?.first_name || 'Player');
     }
   };
 
   return (
     <div className="lobby">
-      <h1>🚀 Spaceship Fight</h1>
+      <h1>🚀 SPACESHIP FIGHT</h1>
+      
+      {telegramUser && (
+        <div className="telegram-user">
+          <p>Welcome, {telegramUser.first_name}! {telegramUser.username && `@${telegramUser.username}`}</p>
+        </div>
+      )}
       
       <div className="player-name">
         <input
@@ -31,39 +44,37 @@ const Lobby = ({ onCreateRoom, onJoinRoom }) => {
       </div>
       
       <div className="game-modes">
-        <h3>Select Game Mode</h3>
+        <h3>SELECT GAME MODE</h3>
         <div className="mode-buttons">
-          <button className={gameMode === '1v1' ? 'active' : ''} onClick={() => setGameMode('1v1')}>
-            ⚔️ 1v1 Duel
-          </button>
-          <button className={gameMode === '2v2' ? 'active' : ''} onClick={() => setGameMode('2v2')}>
-            👥 2v2 Team Battle
-          </button>
-          <button className={gameMode === 'squad' ? 'active' : ''} onClick={() => setGameMode('squad')}>
-            🔫 Squad (4 Players)
-          </button>
-          <button className={gameMode === '4v4' ? 'active' : ''} onClick={() => setGameMode('4v4')}>
-            🚀 4v4 Epic Battle
-          </button>
+          {gameModes.map(mode => (
+            <button
+              key={mode.id}
+              className={gameMode === mode.id ? 'active' : ''}
+              onClick={() => setGameMode(mode.id)}
+            >
+              {mode.name}
+            </button>
+          ))}
         </div>
       </div>
       
       <div className="create-room">
-        <button onClick={handleCreate} disabled={!playerName}>
-          Create New Room
+        <button onClick={handleCreate} disabled={!playerName && !telegramUser}>
+          🎮 CREATE NEW ROOM
         </button>
       </div>
       
       <div className="join-room">
-        <h3>Or Join Existing Room</h3>
+        <h3>OR JOIN EXISTING ROOM</h3>
         <input
           type="text"
           placeholder="Enter Room ID"
           value={joinRoomId}
           onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
+          maxLength={8}
         />
-        <button onClick={handleJoin} disabled={!playerName || !joinRoomId}>
-          Join Room
+        <button onClick={handleJoin} disabled={(!playerName && !telegramUser) || !joinRoomId}>
+          🔗 JOIN ROOM
         </button>
       </div>
     </div>
