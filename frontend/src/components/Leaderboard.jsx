@@ -25,4 +25,46 @@ const Leaderboard = ({ scores, isOpen, onClose }) => {
         maxWidth: '80%'
       }}>
         <h2 style={{ color: '#00ff00', textAlign: 'center', marginBottom: '20px' }}>
-          🏆
+          🏆 LEADERBOARD 🏆
+        </h2>
+        
+        <div className="scores-list">
+          {scores.map((score, index) => (
+            <div key={score.id} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '10px',
+              margin: '5px 0',
+              backgroundColor: index === 0 ? 'rgba(255,215,0,0.2)' : 'rgba(0,255,0,0.1)',
+              borderRadius: '10px',
+              borderLeft: `4px solid ${index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : '#00ff00'}`
+            }}>
+              <span style={{ color: '#fff' }}>
+                {index + 1}. {score.name}
+              </span>
+              <span style={{ color: '#00ff00', fontWeight: 'bold' }}>
+                {score.score} pts
+              </span>
+            </div>
+          ))}
+        </div>
+        
+        <button onClick={onClose} style={{
+          marginTop: '20px',
+          padding: '10px 30px',
+          background: '#00ff00',
+          color: '#000',
+          border: 'none',
+          borderRadius: '10px',
+          cursor: 'pointer',
+          width: '100%',
+          fontWeight: 'bold'
+        }}>
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Leaderboard;
