@@ -1,90 +1,249 @@
-const { Telegraf } = require('telegraf');
+const { Telegraf, Markup } = require('telegraf');
+const axios = require('axios');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const APP_URL = process.env.APP_URL || 'https://your-game-domain.com';
+const API_URL = process.env.API_URL || 'http://localhost:3001';
 
 const bot = new Telegraf(BOT_TOKEN);
 
-// Start command - creates WebApp button
+// Start command
 bot.start((ctx) => {
   const welcomeMessage = `
-🚀 **Spaceship Fight Game** 🚀
+🚀 **SPACESHIP FIGHT GAME** 🚀
+╔══════════════════════════════════╗
+║  Multiplayer Spaceship Combat!   ║
+╚══════════════════════════════════╝
 
-Battle against friends in epic spaceship combat!
+**✨ GAME MODES:**
+⚔️ 1v1 Duels - 2 players
+👥 2v2 Team Battles - 4 players  
+🔫 Squad Mode - 4 player battle royale
+🚀 4v4 Epic Battles - 8 players
 
-**Game Modes:**
-• ⚔️ 1v1 Duels
-• 👥 2v2 Team Battles  
-• 🔫 4-Player Squad
-• 🚀 8-Player Epic Battles
+**🎮 HOW TO PLAY:**
+1. Click PLAY NOW below
+2. Create room or join with Room ID
+3. Get all players ready
+4. Host starts the game!
+5. Use ← → ↑ ↓ to move
+6. Press SPACE to shoot!
 
-**How to Play:**
-1. Click the button below to open the game
-2. Create a room or join with Room ID
-3. Only the host can start the game
-4. Use arrow keys to move, space to shoot!
+**🏆 FEATURES:**
+• Real-time multiplayer combat
+• Room-based matchmaking
+• Host-controlled game start
+• Leaderboards & rankings
+• Telegram integrated
 
-**Features:**
-✅ Create private rooms with unique ID
-✅ Join friends via Room ID
-✅ Host-only start control
-✅ Real-time multiplayer combat
+**💡 TIP:** Share your Room ID with friends to play together!
   `;
 
   ctx.reply(welcomeMessage, {
     parse_mode: 'Markdown',
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '🎮 Play Now', web_app: { url: APP_URL } }]
-      ]
+    ...Markup.inlineKeyboard([
+      [Markup.button.webApp('🎮 PLAY NOW', APP_URL)],
+      [Markup.button.callback('🏆 Leaderboard', 'leaderboard'), Markup.button.callback('ℹ️ Help', 'help')],
+      [Markup.button.url('📢 Join Community', 'https://t.me/your_channel')]
+    ])
+  });
+});
+
+// Leaderboard callback
+bot.action('leaderboard', async (ctx) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/leaderboard`);
+    const leaderboard = response.data;
+    
+    if (leaderboard.length === 0) {
+      return ctx.editMessageText('🏆 No scores yet! Be the first to play! 🏆');
     }
+    
+    let message = '🏆 **TOP PLAYERS** 🏆\n\n';
+    leaderboard.forEach((player, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
+      message += `${medal} *${player.player_name}*\n`;
+      message += `   Score: ${player.total_score} pts\n`;
+      message += `   Games: ${player.games_played} | Wins: ${player.games_won}\n\n`;
+    });
+    
+    await ctx.editMessageText(message, { parse_mode: 'Markdown' });
+    
+    // Add back button
+    await ctx.reply('⬅️ Back to main menu?', Markup.inlineKeyboard([
+      [Markup.button.callback('⬅️ Back', 'back')]
+    ]));
+  } catch (error) {
+    console.error('Leaderboard error:', error);
+    ctx.reply('❌ Error loading leaderboard. Please try again.');
+  }
+});
+
+// Help callback
+bot.action('help', (ctx) => {
+  const helpMessage = `
+🎮 **GAME CONTROLS**
+
+**Movement:** Arrow Keys (← → ↑ ↓)
+**Shoot:** Spacebar
+**Ready:** Click ready button in lobby
+**Start:** Host clicks start when all ready
+
+**📋 ROOM CODES**
+• Create room → Get 8-digit code
+• Share code with friends
+• Friends join via "Join Room"
+
+**⚙️ GAME RULES**
+• Last ship standing wins
+• Each hit deals 25 damage
+• 100 health per ship
+• Eliminations give +10 points
+
+**🛠️ COMMANDS**
+/start - Launch game
+/help - Show this menu
+/leaderboard - View rankings
+/about - Game info
+  `;
+  
+  ctx.editMessageText(helpMessage, { parse_mode: 'Markdown' });
+});
+
+// Back callback
+bot.action('back', (ctx) => {
+  ctx.deleteMessage();
+  const welcomeMessage = `
+🚀 **SPACESHIP FIGHT GAME** 🚀
+
+Click PLAY NOW to start battling!
+  `;
+  
+  ctx.reply(welcomeMessage, {
+    parse_mode: 'Markdown',
+    ...Markup.inlineKeyboard([
+      [Markup.button.webApp('🎮 PLAY NOW', APP_URL)],
+      [Markup.button.callback('🏆 Leaderboard', 'leaderboard'), Markup.button.callback('ℹ️ Help', 'help')]
+    ])
   });
 });
 
 // Help command
 bot.help((ctx) => {
   ctx.reply(`
-🎮 **Game Commands:**
+🎮 **SPACESHIP FIGHT - HELP**
 
-/start - Launch the game
-/help - Show this help message
-/about - Game information
+**Quick Start:**
+1. Click "PLAY NOW" button
+2. Enter your name
+3. Create room or join with code
+4. Wait for players
+5. Click READY
+6. Host clicks START
 
-**Game Controls:**
-Arrow Keys - Move spaceship
-Spacebar - Shoot lasers
-  `);
+**Controls:**
+• Arrow Keys - Move spaceship
+• Spacebar - Fire lasers
+
+**Game Modes:**
+• 1v1: 2 players duel
+• 2v2: 4 players team battle
+• Squad: 4 player free-for-all
+• 4v4: 8 player team war
+
+More info: /about
+  `, { parse_mode: 'Markdown' });
 });
 
 // About command
-bot.about((ctx) => {
+bot.command('about', (ctx) => {
   ctx.reply(`
-🚀 **Spaceship Fight** v1.0
+🚀 **ABOUT SPACESHIP FIGHT**
 
-Multiplayer spaceship combat game built as Telegram Mini App.
+Version: 1.0.0
+Platform: Telegram Mini App
+Developer: Your Name
 
-• Real-time battles
+**Features:**
+• Real-time multiplayer
 • Room-based matchmaking
-• Host-controlled start
-• Multiple game modes
+• 4 exciting game modes
+• Global leaderboards
+• Smooth canvas gameplay
+
+**Tech Stack:**
+• React + Canvas
+• Node.js + Socket.io
+• Telegram Bot API
+• SQLite database
 
 Enjoy the game! ⭐
   `);
 });
 
-// Set bot commands in BotFather format
-bot.telegram.setMyCommands([
-  { command: 'start', description: 'Launch the game' },
-  { command: 'help', description: 'Show game controls' },
-  { command: 'about', description: 'Game information' }
-]);
+// Leaderboard command
+bot.command('leaderboard', async (ctx) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/leaderboard`);
+    const leaderboard = response.data;
+    
+    if (leaderboard.length === 0) {
+      return ctx.reply('🏆 No scores yet! Play now to top the leaderboard! 🏆');
+    }
+    
+    let message = '🏆 **LEADERBOARD** 🏆\n\n';
+    leaderboard.forEach((player, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📌';
+      message += `${medal} *${player.player_name}*\n`;
+      message += `   Total Score: ${player.total_score}\n`;
+      message += `   Games: ${player.games_played} | Wins: ${player.games_won}\n\n`;
+    });
+    
+    ctx.reply(message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    ctx.reply('❌ Error loading leaderboard');
+  }
+});
 
-bot.launch();
+// Stats command
+bot.command('stats', async (ctx) => {
+  try {
+    const response = await axios.get(`${API_URL}/health`);
+    const stats = response.data;
+    
+    ctx.reply(`
+📊 **SERVER STATISTICS**
 
-console.log('🤖 Spaceship Fight Bot is running...');
+Active Rooms: ${stats.rooms || 0}
+Server Status: ${stats.status}
+Uptime: ${Math.floor(process.uptime())} seconds
+    `);
+  } catch (error) {
+    ctx.reply('❌ Server status unavailable');
+  }
+});
+
+// Error handling
+bot.catch((err, ctx) => {
+  console.error('Bot error:', err);
+  ctx.reply('❌ An error occurred. Please try again.');
+});
+
+// Launch bot
+bot.launch().then(() => {
+  console.log(`
+  🤖 SPACESHIP FIGHT BOT 🤖
+  ═══════════════════════════════
+  🚀 Bot is running!
+  📱 Telegram: @${bot.botInfo.username}
+  🌐 WebApp URL: ${APP_URL}
+  🎮 Game Server: ${API_URL}
+  ═══════════════════════════════
+  `);
+});
 
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
